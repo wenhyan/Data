@@ -11,6 +11,8 @@ from torchvision.models import resnet18
 from torchvision import models
 from aimet_torch.model_preparer import prepare_model
 
+import onnxruntime as ort
+
 
 
 DATASET_DIR = '/home/yanwh/workspace/QNN_Tools/mammals_data'   # Please replace this with a real directory
@@ -58,6 +60,19 @@ class ImageNetDataPipeline:
 
         trainer.train(model, max_epochs=epochs, learning_rate=learning_rate,
                       learning_rate_schedule=learning_rate_schedule, use_cuda=use_cuda)
+        
+    @staticmethod
+    def onnx_evaluate(ort_session, use_cuda: bool) -> float:
+        """
+        Given an onnx model, evaluates its Top-1 accuracy on the dataset
+        :param ort_session: the onnx model to evaluate
+        :param use_cuda: whether or not the GPU should be used.
+        """
+        evaluator = ImageNetEvaluator(DATASET_DIR, image_size=image_net_config.dataset['image_size'],
+                                      batch_size=image_net_config.evaluation['batch_size'],
+                                      num_workers=image_net_config.evaluation['num_workers'])
+
+        return evaluator.onnx_evaluate(ort_session, iterations=None, use_cuda=use_cuda)
     
 
 
@@ -78,5 +93,12 @@ if torch.cuda.is_available():
     model.to(torch.device('cuda'))
     
 accuracy = ImageNetDataPipeline.evaluate(model, use_cuda)
-print(accuracy)
+# print(accuracy)
+
+model_path = "resnet18.onnx"
+ort_session = ort.InferenceSession(model_path)
+
+print(ort.get_device())
+
+onnx_accuracy = ImageNetDataPipeline.onnx_evaluate(ort_session, use_cuda)
     
