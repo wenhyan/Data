@@ -4,7 +4,7 @@ import onnx
 import os
 import json
 from torch.utils.data import DataLoader
-from model import resnet18
+# from model import resnet18
 import torchvision.models as models
 from tqdm import tqdm
 import sys
@@ -89,7 +89,7 @@ def main():
     # 损失函数，使用交叉熵损失
     loss_function = torch.nn.CrossEntropyLoss()
 
-    epochs = 1
+    epochs = 5
     best_acc = 0.0
     save_path = "resnet18.pth"
     train_step = len(train_dataloader)

@@ -2,11 +2,11 @@ import torch
 import onnx
 import numpy as np
 import onnxruntime as ort
-from torchvision import transforms
+from torchvision import transforms,models
 import os
 from PIL import Image
 import matplotlib.pyplot as plt
-from model import resnet18
+# from models import resnet18
 import json
     
 
@@ -17,7 +17,7 @@ def main():
     
     
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    image_path = "mammals_data/train/otter/otter-0002.jpg"
+    image_path = "mammals_data/train/vampire_bat/vampire_bat-0005.jpg"
     assert os.path.exists(image_path), "image {} does not exist.".format(image_path)
 
     # 数据预处理操作
@@ -47,15 +47,16 @@ def main():
         cls_index = json.load(json_file)
 
     # 加载模型
-    net = resnet18(num_classes = 45)
+    net = models.resnet18(num_classes = 45)
     weight_path = "resnet18.pth"
     assert os.path.exists(weight_path), "weight {} does not exist.".format(weight_path)
     net.load_state_dict(torch.load(weight_path, map_location=device))
     net.to(device)
     net.eval()
 
-    qnn_8bit_output = np.fromfile("f32_ouptut/Result_0/output.raw", np.float32)
-    qnn_output = np.fromfile("8bit_ouptut/Result_0/output.raw", np.float32)
+    qnn_f32_output = np.fromfile("f32_output/Result_0/output.raw", np.float32)
+    qnn_8bit_output = np.fromfile("8bit_output/Result_3/output.raw", np.float32)
+    qnn_f16_output = np.fromfile("f16_output/Result_0/output.raw", np.float16)
 
     with torch.no_grad():
         output = torch.squeeze(net(img.to(device))).cpu()
@@ -63,13 +64,17 @@ def main():
         onnx_output = onnx_output.reshape(45)
         onnx_output = torch.tensor(onnx_output)
         
-        qnn_output = qnn_output.reshape(45)
-        qnn_output = torch.tensor(qnn_output)
+        qnn_f32_output = qnn_f32_output.reshape(45)
+        qnn_f32_output = torch.tensor(qnn_f32_output)
+
+        # qnn_f16_output = qnn_f16_output.astype(np.float32)
+        qnn_f16_output = qnn_f16_output.reshape(45)
+        qnn_f16_output = torch.tensor(qnn_f16_output)
         
         qnn_8bit_output = qnn_8bit_output.reshape(45)
         qnn_8bit_output = torch.tensor(qnn_8bit_output)
         
-        pre = torch.softmax(qnn_8bit_output, dim = 0)  # 计算概率
+        pre = torch.softmax(qnn_f16_output, dim = 0)  # 计算概率
         cls = torch.argmax(pre).numpy()  # 预测的类别的索引
 
     print_res = "class: {}   prob: {:.3}".format(cls_index[str(cls)], pre[cls].numpy())

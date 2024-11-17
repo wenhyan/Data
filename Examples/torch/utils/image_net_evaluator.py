@@ -120,9 +120,6 @@ class ImageNetEvaluator:
 
                     predicted_batch = model(inputs_batch)
                     
-                    import pdb
-                    pdb.set_trace()
-
                     batch_avg_top_1_5 = accuracy(output=predicted_batch, target=target_batch,
                                                  topk=(1, 2, 3, 4, 5))
                     
@@ -145,9 +142,9 @@ class ImageNetEvaluator:
         acc_top5 /= iterations
 
         logger.info('Top 1 Accuracy: %.2f', acc_top1)
-        logger.info('Top 2 Accuracy: %.2f', acc_top2)
-        logger.info('Top 3 Accuracy: %.2f', acc_top3)
-        logger.info('Top 4 Accuracy: %.2f', acc_top4)
+        # logger.info('Top 2 Accuracy: %.2f', acc_top2)
+        # logger.info('Top 3 Accuracy: %.2f', acc_top3)
+        # logger.info('Top 4 Accuracy: %.2f', acc_top4)
         logger.info('Top 5 Accuracy: %.2f', acc_top5)
         
         # return acc_top1
@@ -184,32 +181,21 @@ class ImageNetEvaluator:
         logger.info("Evaluating nn.Module for %d iterations with batch_size %d",
                     iterations, self._val_data_loader.batch_size)
         
-        for input_data, target_data in self._val_data_loader:
-            input = input_data.numpy()
-            target = target_data
-            
-        
-        onnx_output = model.run(None, {model.get_inputs()[0].name: input})
-            
-            
-
-        onnx_outputs = []
-        
-        
         batch_cntr = 1
         with progressbar.ProgressBar(max_value=iterations) as progress_bar:
             with torch.no_grad():
                 for input_data, target_data in self._val_data_loader:
 
-                    inputs_batch = input_data.to(device)
+                    inputs_batch = input_data.numpy()
                     target_batch = target_data.to(device)
 
-                    predicted_batch = model(inputs_batch)
+                    predicted_batch = model.run(None, {model.get_inputs()[0].name: inputs_batch})
+                    
+                    predicted_batch = torch.tensor(predicted_batch[0])
 
                     batch_avg_top_1_5 = accuracy(output=predicted_batch, target=target_batch,
                                                  topk=(1, 2, 3, 4, 5))
                 
-
                     acc_top1 += batch_avg_top_1_5[0].item()
                     acc_top2 += batch_avg_top_1_5[1].item()
                     acc_top3 += batch_avg_top_1_5[2].item()
@@ -229,10 +215,19 @@ class ImageNetEvaluator:
         acc_top5 /= iterations
 
         logger.info('Top 1 Accuracy: %.2f', acc_top1)
-        logger.info('Top 2 Accuracy: %.2f', acc_top2)
-        logger.info('Top 3 Accuracy: %.2f', acc_top3)
-        logger.info('Top 4 Accuracy: %.2f', acc_top4)
+        # logger.info('Top 2 Accuracy: %.2f', acc_top2)
+        # logger.info('Top 3 Accuracy: %.2f', acc_top3)
+        # logger.info('Top 4 Accuracy: %.2f', acc_top4)
         logger.info('Top 5 Accuracy: %.2f', acc_top5)
         
         return acc_top1
+        
+
+    def qnn_evaluate(self, evaluate_data: torch.tensor, iterations: int = None, use_cuda: bool = False) -> float:
+        """
+        Evaluate the specified infer output.
+        :param model: The output data to be evaluated.
+        :param iterations: The number of batches to use from the validation set.
+        """
+        
         

@@ -27,6 +27,7 @@ def create_raw(image_path, raw_file):
     img = torch.unsqueeze(img, dim = 0)  # 扩展 batch 维度
 
     nhwc_input = np.array(img).transpose(0, 2, 3, 1)
+    # nhwc_input = nhwc_input.astype(np.float16)
     nhwc_input.tofile(raw_file)
     
 def prepare_img(source_dir, dest_dir):
@@ -50,9 +51,15 @@ def prepare_img(source_dir, dest_dir):
 
 
 if __name__ == "__main__":
-    input_dir = "mammals_data/calibration"
-    qnn_data_dir = "/home/yanwh/workspace/ResNet-pytorch/qnn_data"
-    prepare_img(input_dir, qnn_data_dir)
+    input_dir = "mammals_data/calibration" 
+    # class_dir = os.listdir(input_dir)
+    # qnn_data_dir = "qnn_input_data_f16"
+
+    # for class_name in class_dir:
+    #     classes_dir = os.path.join(input_dir, class_name)
+    #     raw_dir = os.path.join(qnn_data_dir, class_name)
+    #     os.mkdir(raw_dir)
+    #     prepare_img(classes_dir, raw_dir)
             
-        
+    prepare_img(input_dir, "qnn_input_data_f32")
             
